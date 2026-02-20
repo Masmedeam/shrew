@@ -1,6 +1,6 @@
 # Shrew: The Minimalist CLI Coding Agent
 
-![Shrew Header Image](https://raw.githubusercontent.com/Masmedeam/shrew/main/header.png)
+![Shrew Header Image](shrew.png)
 
 Shrew is a lightweight, zero-dependency command-line coding agent built in Go. It provides a seamless, agentic interface to your terminal, allowing Large Language Models to interact directly with your local environment to write code, run tests, and manage files.
 
