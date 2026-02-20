@@ -1,26 +1,32 @@
-# Shrew: The Minimalist CLI Coding Agent
+<div align="center">
+  <img src="shrew.png" width="300" alt="Shrew Header Image">
+</div>
 
-<img src="shrew.png" width="300" alt="Shrew Header Image">
+# Shrew: The Universal CLI Agent
 
-Shrew is a lightweight, zero-dependency command-line coding agent built in Go. It provides a seamless, agentic interface to your terminal, allowing Large Language Models to interact directly with your local environment to write code, run tests, and manage files.
+Shrew is a powerful, zero-dependency TUI agent that connects to any API and automates your command line. It's a single static binary written in Go that gives Large Language Models a rich, interactive terminal to perform real-world tasks.
 
-Designed for portability and speed, Shrew is a single static binary. It requires no heavy runtimes like Node.js or Python, making it ideal for clean installations and restricted environments.
+While it feels like a sophisticated, modern application, its only dependency is the Bubble Tea TUI framework. The core logic remains dependency-free, ensuring maximum portability and performance.
 
 ## Features
 
-- Zero Dependencies: Built exclusively with the Go standard library.
-- Multi-Provider Support: Native integration for Google Gemini, OpenAI, and Ollama.
-- Future-Proof Architecture: Connect to any OpenAI-compatible API (DeepSeek, MiniMax, Groq) or custom external adapters.
-- Agentic Execution: The model can execute shell commands via <run> tags to perform real-world tasks.
-- Skills System: Extend the agent's capabilities by adding Markdown-based instructions to the skills directory.
-- Local Context: Automatically gathers context from your current working directory.
-- Instant Startup: Millisecond boot times for a responsive CLI experience.
+- **Universal API Bridge**: Natively supports Gemini, OpenAI, and Ollama, but can connect to *any* API via its generic OpenAI-compatible layer or a custom shell command adapter.
+- **Rich TUI**: An interactive, full-screen terminal interface powered by Bubble Tea that beautifully renders Markdown, thinking processes, and command executions.
+- **Agentic Execution**: The model can execute shell commands directly in your terminal via `<run>` tags, allowing it to write code, manage files, and run tests.
+- **Extensible Skills System**: Teach Shrew new workflows and give it long-term knowledge by adding simple Markdown files to the `skills/` directory.
+- **Zero Core Dependencies**: A single static binary with no required runtimes like Node.js or Python.
 
 ## Installation
 
-### From Source (Recommended)
-Building from source ensures you have the latest features and optimizations for your architecture.
+The easiest way to install Shrew on a new machine is with the one-command installer. This script will automatically detect your OS and architecture, download the latest binary from GitHub Releases, and install it.
 
+```bash
+curl -fsSL https://raw.githubusercontent.com/Masmedeam/shrew/main/install.sh | sh
+```
+
+### Other Methods
+
+#### From Source
 ```bash
 git clone https://github.com/Masmedeam/shrew.git
 cd shrew
@@ -28,69 +34,43 @@ go build -o shrew main.go
 sudo mv shrew /usr/local/bin/
 ```
 
-### Go Install
-If you have Go installed and configured on your path:
-
+#### Go Install
 ```bash
 go install github.com/Masmedeam/shrew@latest
 ```
 
-### Debian / Ubuntu
-For Debian-based systems, you can install the .deb package if available:
-
-```bash
-sudo apt install ./shrew.deb
-```
-
 ## Configuration
 
-Configure Shrew by creating a .env file in your project root or setting environment variables.
+Configure Shrew by creating a `.env` file in your project root or by setting environment variables.
 
 ### Google Gemini (Default)
 ```bash
 GEMINI_API_KEY=your_api_key
 ```
 
-### OpenAI Compatible (DeepSeek, MiniMax, etc.)
+### OpenAI or any Compatible API
+Use this for providers like DeepSeek, MiniMax, Groq, etc.
 ```bash
 SHREW_PROVIDER=openai
 OPENAI_API_KEY=your_api_key
-SHREW_API_URL=https://api.example.com/v1/chat/completions
+SHREW_API_URL=https://api.example.com/v1/chat/completions # The provider's URL
 SHREW_MODEL=model-name
 ```
 
-### Ollama (Local)
+### Custom Command Bridge
+For any other API, you can provide a shell command that takes the conversation history as JSON via stdin and returns the model's response via stdout.
 ```bash
-SHREW_PROVIDER=ollama
-SHREW_MODEL=qwen2.5-coder:7b
+SHREW_PROVIDER=cmd
+SHREW_COMMAND="python3 ./my_api_adapter.py"
 ```
-
-## Skills System
-
-Shrew uses a "Skills" architecture to learn specialized workflows. Any Markdown file placed in the `./skills/` directory is automatically loaded and appended to the system instructions at startup.
-
-Example skills:
-- git_workflow.md: Teaches the agent how to manage commits and branches.
-- api_explorer.md: Instructs the agent on how to use curl to interact with unknown APIs.
 
 ## Usage
 
-Start the interactive session:
-
+Simply run the agent to start an interactive session:
 ```bash
 shrew
 ```
-
-Once started, you can issue high-level instructions:
-- "Initialize a new Go project and write a basic HTTP server."
-- "Refactor the current directory to use a cleaner package structure."
-- "Find all TODOs in the codebase and implement them."
-
-The agent will propose and execute shell commands using `<run>command</run>`. It will process the output and continue until the task is complete.
-
-## Safety and YOLO Mode
-
-By default, Shrew executes proposed commands immediately via bash. This allows for powerful automation but requires caution. Always ensure you are running Shrew in a directory where you trust the potential modifications.
+You can then issue high-level instructions, and Shrew will use its skills, tools, and reasoning to accomplish the task.
 
 ## License
 
