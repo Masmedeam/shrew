@@ -42,36 +42,27 @@ For Debian-based systems, you can install the .deb package if available:
 sudo apt install ./shrew.deb
 ```
 
-## Getting Started
+## Configuration
 
-Shrew relies on environment variables for configuration. You can set these in your shell or create a .env file in your project root.
+Configure Shrew by creating a .env file in your project root or setting environment variables.
 
-### Provider Configuration
-
-#### Google Gemini (Default)
-Set your API key to use the default Gemini 3 Flash Preview model.
-
+### Google Gemini (Default)
 ```bash
 GEMINI_API_KEY=your_api_key
 ```
 
-#### OpenAI or Compatible (DeepSeek, MiniMax, etc.)
-Configure Shrew to use any OpenAI-compatible endpoint.
-
+### OpenAI Compatible (DeepSeek, MiniMax, etc.)
 ```bash
 SHREW_PROVIDER=openai
+OPENAI_API_KEY=your_api_key
 SHREW_API_URL=https://api.example.com/v1/chat/completions
 SHREW_MODEL=model-name
-OPENAI_API_KEY=your_api_key
 ```
 
-#### Ollama (Local)
-For local model execution:
-
+### Ollama (Local)
 ```bash
 SHREW_PROVIDER=ollama
 SHREW_MODEL=qwen2.5-coder:7b
-OLLAMA_URL=http://localhost:11434
 ```
 
 ## Skills System
@@ -81,8 +72,6 @@ Shrew uses a "Skills" architecture to learn specialized workflows. Any Markdown 
 Example skills:
 - git_workflow.md: Teaches the agent how to manage commits and branches.
 - api_explorer.md: Instructs the agent on how to use curl to interact with unknown APIs.
-
-To add a new skill, simply create a file at `skills/my_skill.md` with clear instructions on how the agent should behave or which commands it should use.
 
 ## Usage
 
@@ -106,6 +95,3 @@ By default, Shrew executes proposed commands immediately via bash. This allows f
 ## License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
-
-Part of the Masmedeam ecosystem.
-```
