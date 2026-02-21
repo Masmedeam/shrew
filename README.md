@@ -6,7 +6,7 @@
 
 # Shrew: Ultra-lightweight Agent
 
-Shrew is a powerful, zero-dependency TUI agent that connects to any API and automates your command line. It's a single static binary written in Go that gives Large Language Models a rich, interactive terminal to perform real-world tasks.
+Shrew is a powerful, zero-dependency AI agent that connects to any API through its skills paradigm and automates your command line. It's a single static binary written in Go that is configuration-oriented, making it more extensible and trustable without the need to update its code. Shrew gives AI models a rich, interactive terminal to perform real-world tasks.
 
 ## Philosophy
 
@@ -24,7 +24,15 @@ The easiest way to install Shrew on a new machine is with the one-command instal
 curl -fsSL https://raw.githubusercontent.com/Masmedeam/shrew/main/install.sh | sh
 ```
 
-### Other Methods
+## Usage
+
+Simply run the agent to start an interactive session:
+```bash
+shrew
+```
+You can then issue high-level instructions, and Shrew will use its skills, tools, and reasoning to accomplish the task.
+
+### Other Installation Methods
 
 #### From Source
 ```bash
@@ -43,11 +51,6 @@ go install github.com/Masmedeam/shrew@latest
 
 Configure Shrew by creating a `.env` file in your project root or by setting environment variables.
 
-### Google Gemini (Default)
-```bash
-GEMINI_API_KEY=your_api_key
-```
-
 ### OpenAI or any Compatible API
 Use this for providers like DeepSeek, MiniMax, Groq, etc.
 ```bash
@@ -56,21 +59,6 @@ OPENAI_API_KEY=your_api_key
 SHREW_API_URL=https://api.example.com/v1/chat/completions # The provider's URL
 SHREW_MODEL=model-name
 ```
-
-### Custom Command Bridge
-For any other API, you can provide a shell command that takes the conversation history as JSON via stdin and returns the model's response via stdout.
-```bash
-SHREW_PROVIDER=cmd
-SHREW_COMMAND="python3 ./my_api_adapter.py"
-```
-
-## Usage
-
-Simply run the agent to start an interactive session:
-```bash
-shrew
-```
-You can then issue high-level instructions, and Shrew will use its skills, tools, and reasoning to accomplish the task.
 
 ## License
 
