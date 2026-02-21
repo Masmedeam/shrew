@@ -1,1 +1,18 @@
+# Binaries
+shrew
+shrew_test
+shrew-darwin-*
+shrew-linux-*
+
+# Logs
+*.log
+shrew_debug.log
+
+# Local History & Sessions
+history.json
+
+# Environment
 .env
+
+# OS Files
+.DS_Store
