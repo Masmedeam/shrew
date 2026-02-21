@@ -1,5 +1,7 @@
 <div align="center">
   <img src="shrew.png" width="300" alt="Shrew Header Image">
+  <br>
+  <img src="shrew.gif" width="600" alt="Shrew Demo Video">
 </div>
 
 # Shrew: Ultra-lightweight Agent
