@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 func loadEnv() {
@@ -64,4 +65,23 @@ func executeCommand(cmdStr string) (string, error) {
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	return strings.TrimSpace(out.String() + stderr.String()), err
+}
+
+var (
+	debugLog *os.File
+)
+
+func initLogging() {
+	var err error
+	debugLog, err = os.OpenFile("shrew_debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to open debug log: %v\n", err)
+	}
+}
+
+func debug(format string, args ...interface{}) {
+	if debugLog != nil {
+		timestamp := time.Now().Format("2006-01-02 15:04:05")
+		fmt.Fprintf(debugLog, "[%s] "+format+"\n", append([]interface{}{timestamp}, args...)...)
+	}
 }

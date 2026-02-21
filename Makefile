@@ -14,7 +14,7 @@ all: build
 # Build for the current OS/ARCH
 build:
 	@echo "==> Building Shrew for $(shell go env GOOS)/$(shell go env GOARCH)..."
-	@go build -ldflags=$(LDFLAGS) -o $(BINARY_NAME) main.go
+	@go build -ldflags=$(LDFLAGS) -o $(BINARY_NAME) .
 
 # Clean up build artifacts
 clean:
@@ -34,9 +34,9 @@ uninstall:
 # Build binaries for release (Linux and Darwin)
 release-build: clean
 	@echo "==> Building release binaries..."
-	@GOOS=linux GOARCH=amd64 go build -ldflags=$(LDFLAGS) -o shrew-linux-amd64 main.go
-	@GOOS=linux GOARCH=arm64 go build -ldflags=$(LDFLAGS) -o shrew-linux-arm64 main.go
-	@GOOS=darwin GOARCH=amd64 go build -ldflags=$(LDFLAGS) -o shrew-darwin-amd64 main.go
-	@GOOS=darwin GOARCH=arm64 go build -ldflags=$(LDFLAGS) -o shrew-darwin-arm64 main.go
+	@GOOS=linux GOARCH=amd64 go build -ldflags=$(LDFLAGS) -o shrew-linux-amd64 .
+	@GOOS=linux GOARCH=arm64 go build -ldflags=$(LDFLAGS) -o shrew-linux-arm64 .
+	@GOOS=darwin GOARCH=amd64 go build -ldflags=$(LDFLAGS) -o shrew-darwin-amd64 .
+	@GOOS=darwin GOARCH=arm64 go build -ldflags=$(LDFLAGS) -o shrew-darwin-arm64 .
 	@echo "==> Release binaries created:"
 	@ls shrew-*

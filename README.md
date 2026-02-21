@@ -2,19 +2,17 @@
   <img src="shrew.png" width="300" alt="Shrew Header Image">
 </div>
 
-# Shrew: The Universal CLI Agent
+# Shrew: Ultra-lightweight Agent
 
 Shrew is a powerful, zero-dependency TUI agent that connects to any API and automates your command line. It's a single static binary written in Go that gives Large Language Models a rich, interactive terminal to perform real-world tasks.
 
-While it feels like a sophisticated, modern application, its only dependency is the Bubble Tea TUI framework. The core logic remains dependency-free, ensuring maximum portability and performance.
+## Philosophy
 
-## Features
-
-- **Universal API Bridge**: Natively supports Gemini, OpenAI, and Ollama, but can connect to *any* API via its generic OpenAI-compatible layer or a custom shell command adapter.
-- **Rich TUI**: An interactive, full-screen terminal interface powered by Bubble Tea that beautifully renders Markdown, thinking processes, and command executions.
+- **Lightweight & Fast**: A single static binary written in Go with minimal dependencies, ensuring maximum portability and performance.
+- **Model Agnostic**: Connect to any model provider in the cloud (Gemini, OpenAI, Anthropic, etc.) or run locally using Ollama.
 - **Agentic Execution**: The model can execute shell commands directly in your terminal via `<run>` tags, allowing it to write code, manage files, and run tests.
+- **Hackable & Extensible**: Designed with a clean, easy-to-understand codebase so it can be easily forked, modified, and extended with new skills.
 - **Extensible Skills System**: Teach Shrew new workflows and give it long-term knowledge by adding simple Markdown files to the `skills/` directory.
-- **Zero Core Dependencies**: A single static binary with no required runtimes like Node.js or Python.
 
 ## Installation
 
