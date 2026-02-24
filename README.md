@@ -51,13 +51,25 @@ go install github.com/Masmedeam/shrew@latest
 
 Configure Shrew by creating a `.env` file in your project root or by setting environment variables.
 
+The `SHREW_MODEL` variable is used to define the provider and model you want to use in the format `provider/model-name`.
+
 ### OpenAI or any Compatible API
 Use this for providers like DeepSeek, MiniMax, Groq, etc.
 ```bash
-SHREW_PROVIDER=openai
 OPENAI_API_KEY=your_api_key
 SHREW_API_URL=https://api.example.com/v1/chat/completions # The provider's URL
-SHREW_MODEL=model-name
+SHREW_MODEL=openai/model-name
+```
+
+### Gemini
+```bash
+GEMINI_API_KEY=your_api_key
+SHREW_MODEL=gemini/gemini-1.5-flash
+```
+
+### Ollama
+```bash
+SHREW_MODEL=ollama/llama3
 ```
 
 ## License
