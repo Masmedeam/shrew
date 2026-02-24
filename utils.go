@@ -31,13 +31,23 @@ func loadEnv() {
 	}
 }
 
-func loadSkills() string {
+func loadSkills(db *DB) string {
 	var skills strings.Builder
+	// Load from files
 	files, _ := os.ReadDir("skills")
 	for _, file := range files {
 		if !file.IsDir() && strings.HasSuffix(file.Name(), ".md") {
 			content, _ := os.ReadFile(filepath.Join("skills", file.Name()))
-			skills.WriteString(fmt.Sprintf("\n### Skill: %s\n%s\n", file.Name(), string(content)))
+			skills.WriteString(fmt.Sprintf("\n### Skill (File): %s\n%s\n", file.Name(), string(content)))
+		}
+	}
+
+	// Load from DB
+	if db != nil {
+		skillNames, _ := db.ListSkills()
+		for _, name := range skillNames {
+			docs, _ := db.GetSkill(name)
+			skills.WriteString(fmt.Sprintf("\n### Skill (Learned): %s\n%s\n", name, docs))
 		}
 	}
 	return skills.String()

@@ -44,3 +44,8 @@ type Session struct {
 	Timestamp string    `json:"timestamp"`
 	Messages  []Message `json:"messages"`
 }
+
+type Skill struct {
+	Name          string `json:"name"`
+	Documentation string `json:"documentation"`
+}

@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 )
 
 type EventType string
@@ -31,15 +32,17 @@ type Engine struct {
 	History     []Message
 	SessionID   string
 	Subscribers []chan Event
+	DB          *DB
 	mu          sync.Mutex
 }
 
-func NewEngine(cfg Config, system string, sessionID string, history []Message) *Engine {
+func NewEngine(cfg Config, system string, sessionID string, history []Message, db *DB) *Engine {
 	return &Engine{
 		Config:    cfg,
 		System:    system,
 		History:   history,
 		SessionID: sessionID,
+		DB:        db,
 	}
 }
 
@@ -81,7 +84,7 @@ func (e *Engine) runLoop() {
 
 		e.mu.Lock()
 		e.History = append(e.History, Message{Role: "assistant", Content: resp})
-		updateSession(e.SessionID, e.History)
+		e.DB.SaveSession(Session{ID: e.SessionID, Messages: e.History, Timestamp: time.Now().Format(time.RFC3339)})
 		e.mu.Unlock()
 		e.broadcast(Event{Type: EventResponse, Content: resp})
 
@@ -133,13 +136,49 @@ func (e *Engine) handleTags(content string) bool {
 		return true
 	}
 
+	// 4. Check for <vault_get>
+	vaultRe := regexp.MustCompile(`<vault_get\s+key="(.*?)"\s*/>`)
+	if match := vaultRe.FindStringSubmatch(content); len(match) >= 2 {
+		key := match[1]
+		val, err := e.DB.GetSecret(key)
+		output := val
+		if err != nil {
+			output = fmt.Sprintf("Error: Secret '%s' not found in vault.", key)
+		}
+		e.addOutput(fmt.Sprintf("<vault_output key=\"%s\">\n%s\n</vault_output>", key, output), "Retrieved secret from vault: "+key)
+		return true
+	}
+
+	// 5. Check for <save_skill>
+	skillSaveRe := regexp.MustCompile(`(?s)<save_skill\s+name="(.*?)">(.*?)</save_skill>`)
+	if match := skillSaveRe.FindStringSubmatch(content); len(match) >= 3 {
+		name := match[1]
+		docs := match[2]
+		e.DB.SaveSkill(name, docs)
+		e.addOutput(fmt.Sprintf("Skill '%s' saved successfully.", name), "Learned new skill: "+name)
+		return true
+	}
+
+	// 6. Check for <get_skill>
+	skillGetRe := regexp.MustCompile(`<get_skill\s+name="(.*?)"\s*/>`)
+	if match := skillGetRe.FindStringSubmatch(content); len(match) >= 2 {
+		name := match[1]
+		docs, err := e.DB.GetSkill(name)
+		output := docs
+		if err != nil {
+			output = fmt.Sprintf("Error: Skill '%s' not found.", name)
+		}
+		e.addOutput(fmt.Sprintf("<skill_output name=\"%s\">\n%s\n</skill_output>", name, output), "Retrieved skill docs: "+name)
+		return true
+	}
+
 	return false
 }
 
 func (e *Engine) addOutput(fullMsg string, display string) {
 	e.mu.Lock()
 	e.History = append(e.History, Message{Role: "user", Content: fullMsg})
-	updateSession(e.SessionID, e.History)
+	e.DB.SaveSession(Session{ID: e.SessionID, Messages: e.History, Timestamp: time.Now().Format(time.RFC3339)})
 	e.mu.Unlock()
 	e.broadcast(Event{Type: EventOutput, Content: display})
 }

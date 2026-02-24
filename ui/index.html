@@ -150,6 +150,11 @@
         <div class="logo">SHREW</div>
         <nav>
             <div class="nav-item active" data-tab="home">Home</div>
+            <div id="session-list" style="margin-left: 1rem; margin-bottom: 1rem; font-size: 0.8rem; overflow-y: auto; max-height: 200px; display: flex; flex-direction: column; gap: 5px;">
+                <!-- Sessions will be loaded here -->
+            </div>
+            <div class="nav-item" id="new-chat-btn" style="border: 1px dashed var(--border); text-align: center; margin-bottom: 1rem;">+ New Chat</div>
+            
             <div class="nav-item" data-tab="skills">Skills</div>
             <div class="nav-item" data-tab="vault">Vault</div>
         </nav>
@@ -167,22 +172,136 @@
                 </div>
             </div>
         </div>
-        <div id="skills" class="tab-content"><div class="empty-state" style="padding: 4rem 15%;">Skills inactive</div></div>
-        <div id="vault" class="tab-content"><div class="empty-state" style="padding: 4rem 15%;">Vault locked</div></div>
+        <div id="skills" class="tab-content">
+            <div style="padding: 4rem 15%;">
+                <h2>Learned Skills</h2>
+                <div id="skills-list" style="margin-top: 2rem; display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Skills will be loaded here -->
+                </div>
+                <p style="margin-top: 2rem; color: var(--text-secondary); font-size: 0.9rem;">
+                    To teach Shrew a new skill, go to Home and ask it to learn a specific API (e.g., "Learn the Twitter API documentation").
+                </p>
+            </div>
+        </div>
+        <div id="vault" class="tab-content">
+            <div style="padding: 4rem 15%;">
+                <h2>Vault</h2>
+                <div style="margin-top: 2rem; background: var(--accent-soft); padding: 1.5rem; border-radius: 4px;">
+                    <h3>Add Secret</h3>
+                    <div style="display: flex; gap: 10px; margin-top: 1rem;">
+                        <input type="text" id="vault-key" placeholder="Key (e.g. STRIPE_KEY)" style="flex: 1; padding: 0.5rem; border: 1px solid var(--border);">
+                        <input type="password" id="vault-val" placeholder="Value" style="flex: 1; padding: 0.5rem; border: 1px solid var(--border);">
+                        <button id="add-vault-btn" style="padding: 0.5rem 1rem; background: black; color: white; border: none; cursor: pointer;">Add</button>
+                    </div>
+                </div>
+                <div id="vault-list" style="margin-top: 2rem;">
+                    <!-- Secrets will be loaded here -->
+                </div>
+            </div>
+        </div>
     </main>
 
     <script>
         const chatContainer = document.getElementById('chat-container');
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
+        const sessionList = document.getElementById('session-list');
+        const vaultList = document.getElementById('vault-list');
+        const skillsList = document.getElementById('skills-list');
 
         document.querySelectorAll('.nav-item').forEach(item => {
+            if (item.id === 'new-chat-btn') return;
             item.addEventListener('click', () => {
                 document.querySelectorAll('.nav-item, .tab-content').forEach(el => el.classList.remove('active'));
                 item.classList.add('active');
-                document.getElementById(item.dataset.tab).classList.add('active');
+                if (item.dataset.tab) {
+                    document.getElementById(item.dataset.tab).classList.add('active');
+                    if (item.dataset.tab === 'vault') loadVault();
+                    if (item.dataset.tab === 'skills') loadSkills();
+                    if (item.dataset.tab === 'home') loadSessions();
+                }
             });
         });
+
+        // Sessions logic
+        async function loadSessions() {
+            const res = await fetch('/sessions');
+            const sessions = await res.json();
+            sessionList.innerHTML = '';
+            sessions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).forEach(s => {
+                const div = document.createElement('div');
+                div.className = 'session-item';
+                div.style = 'padding: 4px; cursor: pointer; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
+                div.textContent = s.id;
+                div.onclick = () => loadSession(s.id);
+                sessionList.appendChild(div);
+            });
+        }
+
+        async function loadSession(id) {
+            const res = await fetch(`/session?id=${id}`);
+            const sess = await res.json();
+            chatContainer.innerHTML = '';
+            sess.messages.forEach(m => {
+                if (m.content.startsWith('Context: ')) return;
+                appendMessage(m.role, m.content);
+            });
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        document.getElementById('new-chat-btn').onclick = async () => {
+            await fetch('/session/new', { method: 'POST' });
+            chatContainer.innerHTML = '';
+            loadSessions();
+        };
+
+        // Vault logic
+        async function loadVault() {
+            const res = await fetch('/vault');
+            const secrets = await res.json();
+            vaultList.innerHTML = '<table style="width: 100%; text-align: left; border-collapse: collapse;">' +
+                '<tr style="border-bottom: 1px solid var(--border);"><th style="padding: 10px;">Key</th><th style="padding: 10px;">Value</th><th style="padding: 10px;">Action</th></tr>' +
+                Object.entries(secrets).map(([k, v]) => `
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: 10px;">${k}</td>
+                        <td style="padding: 10px;">••••••••</td>
+                        <td style="padding: 10px;"><button onclick="deleteSecret('${k}')" style="color: red; background: none; border: none; cursor: pointer;">Delete</button></td>
+                    </tr>
+                `).join('') + '</table>';
+        }
+
+        async function deleteSecret(key) {
+            await fetch(`/vault?key=${key}`, { method: 'DELETE' });
+            loadVault();
+        }
+
+        document.getElementById('add-vault-btn').onclick = async () => {
+            const key = document.getElementById('vault-key').value;
+            const value = document.getElementById('vault-val').value;
+            if (!key || !value) return;
+            await fetch('/vault', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key, value })
+            });
+            document.getElementById('vault-key').value = '';
+            document.getElementById('vault-val').value = '';
+            loadVault();
+        };
+
+        // Skills logic
+        async function loadSkills() {
+            const res = await fetch('/skills');
+            const skills = await res.json();
+            skillsList.innerHTML = skills.map(s => `
+                <div style="padding: 1rem; border: 1px solid var(--border); border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+                    <strong>${s}</strong>
+                    <span style="font-size: 0.8rem; color: green;">Active</span>
+                </div>
+            `).join('') || '<p>No skills learned yet.</p>';
+        }
+
+        loadSessions();
 
         const events = new EventSource('/events');
         let currentAiMessage = null;

@@ -14,7 +14,16 @@ CRITICAL: Do not use Markdown (no bold, no italics, no markdown lists, no backti
 Respond in PLAIN TEXT only.
 To execute shell commands, wrap them in <run>tags: <run>ls -la</run>.
 To reason, use <think>...</think> tags.
-Use standard CLI tools.`
+Use standard CLI tools.
+
+VAULT:
+You can retrieve secrets (bearer tokens, API keys) from the local vault using <vault_get key="NAME"/>.
+The system will provide the secret value in a <vault_output> tag.
+
+SKILLS:
+If you need documentation for an API, first check if you have it using <get_skill name="service_name"/>.
+If not found, search for it (e.g., using curl) or ask the user.
+To save documentation for future use, use <save_skill name="service_name">DOCS_CONTENT</save_skill>.`
 
 func main() {
 	listFlag := flag.Bool("list", false, "List all available sessions")
@@ -22,15 +31,30 @@ func main() {
 	flag.Parse()
 
 	if *listFlag {
-		h, _ := loadHistory()
+		db, err := InitDB("shrew.db")
+		if err != nil {
+			fmt.Printf("Error initializing DB: %v\n", err)
+			os.Exit(1)
+		}
+		defer db.Close()
+
+		sessions, _ := db.ListSessions()
 		fmt.Println("Available Sessions:")
-		for id, s := range h.Sessions {
-			fmt.Printf("- %s (Last update: %s)\n", id, s.Timestamp)
+		for _, s := range sessions {
+			fmt.Printf("- %s (Last update: %s)\n", s.ID, s.Timestamp)
 		}
 		return
 	}
 
 	loadEnv()
+	db, err := InitDB("shrew.db")
+	if err != nil {
+		fmt.Printf("Error initializing DB: %v\n", err)
+		os.Exit(1)
+	}
+	// Note: In a real app, you might want to handle closing db more gracefully
+	// but for a CLI tool this is often acceptable until shutdown.
+
 	cfg := Config{
 		GeminiKey: os.Getenv("GEMINI_API_KEY"),
 		OpenAIKey: os.Getenv("OPENAI_API_KEY"),
@@ -55,7 +79,7 @@ func main() {
 	sessionID := time.Now().Format("2006-01-02-15-04-05")
 	history := []Message{{Role: "user", Content: "Context: " + gatherContext()}}
 	
-	engine := NewEngine(cfg, baseSystemPrompt+loadSkills(), sessionID, history)
+	engine := NewEngine(cfg, baseSystemPrompt+loadSkills(db), sessionID, history, db)
 	server := NewServer(engine)
 
 	// Start Server
