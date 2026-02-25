@@ -39,6 +39,11 @@
             font-weight: 800; font-size: 1rem; color: var(--text);
             margin-bottom: 2.5rem; padding: 0 0.5rem;
             letter-spacing: 0.05em; text-transform: uppercase;
+            display: flex; align-items: center; gap: 10px;
+        }
+
+        .logo img {
+            width: 48px; height: 48px; object-fit: contain;
         }
 
         nav { display: flex; flex-direction: column; gap: 4px; }
@@ -50,17 +55,36 @@
         .nav-item:hover { background: #f0f0f0; color: var(--text); }
         .nav-item.active { background: var(--accent-soft); color: var(--text); }
 
-        main { flex: 1; display: flex; flex-direction: column; position: relative; }
-        .tab-content { display: none; flex: 1; height: 100%; overflow: hidden; }
+        main { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            position: relative;
+            min-width: 0; /* Crucial for preventing flex children from expanding parent */
+        }
+        .tab-content { 
+            display: none; 
+            flex: 1; 
+            height: 100%; 
+            overflow: hidden;
+            min-width: 0;
+        }
         .tab-content.active { display: flex; flex-direction: column; }
 
         #chat-container {
-            flex: 1; overflow-y: auto;
+            flex: 1; 
+            overflow-y: auto;
+            overflow-x: hidden; /* Prevent horizontal scroll on the container */
             padding: 4rem 15% 12rem 15%;
             scroll-behavior: smooth;
         }
 
-        .message { margin-bottom: 3.5rem; animation: fadeIn 0.2s ease-out; }
+        .message { 
+            margin-bottom: 3.5rem; 
+            animation: fadeIn 0.2s ease-out;
+            max-width: 100%;
+            overflow-wrap: anywhere; /* Ensure long strings like tokens wrap */
+        }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         .role-label {
@@ -70,7 +94,9 @@
 
         .content { 
             font-size: 0.95rem; line-height: 1.7; 
-            word-break: break-word; color: #111111;
+            word-break: break-word; 
+            overflow-wrap: anywhere;
+            color: #111111;
         }
 
         .content h1, .content h2, .content h3 { margin: 1.5rem 0 1rem 0; font-weight: 800; line-height: 1.2; }
@@ -81,6 +107,7 @@
             border-radius: 3px; 
             font-family: monospace; 
             font-size: 0.9em;
+            word-break: break-all;
         }
         .content ul, .content ol { margin: 1rem 0; padding-left: 1.5rem; }
         .content li { margin-bottom: 0.5rem; }
@@ -91,6 +118,8 @@
             padding: 1.25rem; margin: 1.25rem 0; font-size: 0.9rem;
             color: var(--text-secondary); border-radius: 2px;
             white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            max-width: 100%;
         }
 
         .action-block {
@@ -98,6 +127,8 @@
             border-radius: 2px; margin: 1.5rem 0;
             font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;
             white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            max-width: 100%;
         }
 
         .file-block {
@@ -106,20 +137,40 @@
             border-radius: 4px; margin: 1rem 0;
             font-family: 'Inter', sans-serif; font-size: 0.85rem;
             font-weight: 500; display: flex; align-items: center; gap: 0.5rem;
+            max-width: 100%;
+            overflow: hidden;
         }
+        .file-block span { flex-shrink: 0; }
+        .file-block div { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         .output-block {
             background: #ffffff; border: 1px solid var(--border);
             padding: 1rem; border-radius: 2px; margin: 0.5rem 0;
-            font-family: monospace; white-space: pre-wrap;
+            font-family: monospace; 
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
             font-size: 0.8rem; color: var(--text-secondary);
-            max-height: 400px; overflow-y: auto;
+            max-height: 400px; 
+            overflow-y: auto;
+            max-width: 100%;
         }
 
         .input-area {
             position: absolute; bottom: 0; left: 0; right: 0;
             padding: 2rem 15% 4rem 15%;
             background: linear-gradient(to top, white 80%, rgba(255,255,255,0));
+        }
+
+        @media (max-width: 1200px) {
+            #chat-container, .input-area { padding-left: 10%; padding-right: 10%; }
+        }
+        @media (max-width: 800px) {
+            #chat-container, .input-area { padding-left: 1.5rem; padding-right: 1.5rem; }
+            aside { width: 60px; padding: 2.5rem 0.5rem; }
+            .logo span { display: none; }
+            .nav-item { padding: 0.6rem; text-align: center; }
+            .nav-item span { display: none; }
+            #session-list { display: none !important; }
         }
 
         .input-wrapper {
@@ -143,20 +194,87 @@
         .dot:nth-child(3) { animation-delay: 0.4s; }
         @keyframes pulse { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
 
+        .session-item { display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; border-radius: 4px; }
+        .session-item:hover { background: #f0f0f0; }
+        .session-item .delete-session-btn { opacity: 0; color: #ff4444; border: none; background: none; cursor: pointer; padding: 0 4px; font-size: 1.2rem; line-height: 1; }
+        .session-item:hover .delete-session-btn { opacity: 1; }
+
+        /* Modal / Confirmation UI */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5); display: none;
+            align-items: center; justify-content: center; z-index: 1000;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: white; padding: 1.5rem; border-radius: 8px;
+            width: 320px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .modal h3 { margin-bottom: 0.5rem; }
+        .modal p { font-size: 0.9rem; color: #666; }
+        .modal .buttons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem; }
+        .modal button { padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; border: none; font-size: 0.85rem; }
+        .modal .confirm-btn { background: #ff4444; color: white; }
+        .modal .cancel-btn { background: #f0f0f0; color: #333; }
+        .modal .save-btn { background: #000000; color: white; }
+
+        .modal.large {
+            width: 80%;
+            max-width: 800px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal.large .modal-body {
+            flex: 1;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+        .modal.large textarea {
+            width: 100%;
+            height: 300px;
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+
+        /* Vault sub-tabs */
+        .sub-tabs { display: flex; gap: 20px; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; }
+        .sub-tab { padding: 0.5rem 0; cursor: pointer; color: var(--text-secondary); border-bottom: 2px solid transparent; font-size: 0.85rem; font-weight: 600; }
+        .sub-tab.active { color: var(--text); border-bottom-color: var(--text); }
+        .sub-tab-content { display: none; }
+        .sub-tab-content.active { display: block; }
+
     </style>
 </head>
 <body>
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="modal" id="modal-dialog">
+            <h3 id="modal-title">Confirm</h3>
+            <p id="modal-text">Are you sure you want to proceed?</p>
+            <div id="modal-body" class="modal-body" style="display: none;"></div>
+            <div class="buttons">
+                <button id="modal-cancel" class="cancel-btn">Cancel</button>
+                <button id="modal-confirm" class="confirm-btn">Confirm</button>
+                <button id="modal-save" class="save-btn" style="display: none;">Save</button>
+            </div>
+        </div>
+    </div>
     <aside>
-        <div class="logo">SHREW</div>
+        <div class="logo">
+            <img src="/shrew.png" alt="Shrew">
+            <span>SHREW</span>
+        </div>
         <nav>
-            <div class="nav-item active" data-tab="home">Home</div>
+            <div class="nav-item active" data-tab="home"><span>Home</span></div>
             <div id="session-list" style="margin-left: 1rem; margin-bottom: 1rem; font-size: 0.8rem; overflow-y: auto; max-height: 200px; display: flex; flex-direction: column; gap: 5px;">
                 <!-- Sessions will be loaded here -->
             </div>
-            <div class="nav-item" id="new-chat-btn" style="border: 1px dashed var(--border); text-align: center; margin-bottom: 1rem;">+ New Chat</div>
+            <div class="nav-item" id="new-chat-btn" style="border: 1px dashed var(--border); text-align: center; margin-bottom: 1rem;"><span>+ New Chat</span></div>
             
-            <div class="nav-item" data-tab="skills">Skills</div>
-            <div class="nav-item" data-tab="vault">Vault</div>
+            <div class="nav-item" data-tab="skills"><span>Skills</span></div>
+            <div class="nav-item" data-tab="vault"><span>Vault</span></div>
         </nav>
     </aside>
 
@@ -174,7 +292,10 @@
         </div>
         <div id="skills" class="tab-content">
             <div style="padding: 4rem 15%;">
-                <h2>Learned Skills</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h2>Learned Skills</h2>
+                    <button id="new-skill-btn" style="padding: 0.5rem 1rem; background: black; color: white; border: none; cursor: pointer; border-radius: 4px;">+ Create New Skill</button>
+                </div>
                 <div id="skills-list" style="margin-top: 2rem; display: flex; flex-direction: column; gap: 10px;">
                     <!-- Skills will be loaded here -->
                 </div>
@@ -186,16 +307,57 @@
         <div id="vault" class="tab-content">
             <div style="padding: 4rem 15%;">
                 <h2>Vault</h2>
-                <div style="margin-top: 2rem; background: var(--accent-soft); padding: 1.5rem; border-radius: 4px;">
-                    <h3>Add Secret</h3>
-                    <div style="display: flex; gap: 10px; margin-top: 1rem;">
-                        <input type="text" id="vault-key" placeholder="Key (e.g. STRIPE_KEY)" style="flex: 1; padding: 0.5rem; border: 1px solid var(--border);">
-                        <input type="password" id="vault-val" placeholder="Value" style="flex: 1; padding: 0.5rem; border: 1px solid var(--border);">
-                        <button id="add-vault-btn" style="padding: 0.5rem 1rem; background: black; color: white; border: none; cursor: pointer;">Add</button>
-                    </div>
+                
+                <div class="sub-tabs" style="margin-top: 2rem;">
+                    <div class="sub-tab active" data-subtab="vault-general">General Secrets</div>
+                    <div class="sub-tab" data-subtab="vault-system">System Config</div>
                 </div>
-                <div id="vault-list" style="margin-top: 2rem;">
-                    <!-- Secrets will be loaded here -->
+
+                <div id="vault-general" class="sub-tab-content active">
+                    <div style="background: var(--accent-soft); padding: 1.5rem; border-radius: 4px; margin-bottom: 2rem;">
+                        <h3>Add Secret</h3>
+                        <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                            Add keys for tools, APIs, and skills.
+                        </p>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="vault-key-gen" placeholder="Key (e.g. STRIPE_KEY)" style="flex: 1; padding: 0.5rem; border: 1px solid var(--border);">
+                            <input type="password" id="vault-val-gen" placeholder="Value" style="flex: 1; padding: 0.5rem; border: 1px solid var(--border);">
+                            <button id="add-vault-btn-gen" style="padding: 0.5rem 1rem; background: black; color: white; border: none; cursor: pointer;">Add</button>
+                        </div>
+                    </div>
+                    <div id="vault-list-general"></div>
+                </div>
+
+                <div id="vault-system" class="sub-tab-content">
+                    <div style="background: var(--accent-soft); padding: 1.5rem; border-radius: 4px; margin-bottom: 2rem;">
+                        <h3>Agent Configuration</h3>
+                        <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                            Configure the core Shrew agent behavior.
+                        </p>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <div style="display: flex; gap: 10px;">
+                                <label style="width: 120px; font-size: 0.8rem; font-weight: 600;">API Key</label>
+                                <input type="password" id="sys-api-key" placeholder="SHREW_API_KEY" style="flex: 1; padding: 0.5rem; border: 1px solid var(--border);">
+                                <button onclick="saveSysConfig('SHREW_API_KEY', 'sys-api-key')" style="padding: 0.5rem 1rem; background: black; color: white; border: none; cursor: pointer;">Save</button>
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <label style="width: 120px; font-size: 0.8rem; font-weight: 600;">API URL</label>
+                                <input type="text" id="sys-api-url" placeholder="SHREW_API_URL" style="flex: 1; padding: 0.5rem; border: 1px solid var(--border);">
+                                <button onclick="saveSysConfig('SHREW_API_URL', 'sys-api-url')" style="padding: 0.5rem 1rem; background: black; color: white; border: none; cursor: pointer;">Save</button>
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <label style="width: 120px; font-size: 0.8rem; font-weight: 600;">Model</label>
+                                <input type="text" id="sys-model" placeholder="SHREW_MODEL" style="flex: 1; padding: 0.5rem; border: 1px solid var(--border);">
+                                <button onclick="saveSysConfig('SHREW_MODEL', 'sys-model')" style="padding: 0.5rem 1rem; background: black; color: white; border: none; cursor: pointer;">Save</button>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 10px;">
+                                <label style="font-size: 0.8rem; font-weight: 600;">Custom Instructions</label>
+                                <textarea id="sys-instructions" placeholder="Extra context or rules for Shrew..." style="width: 100%; height: 100px; padding: 0.5rem; border: 1px solid var(--border); resize: vertical; font-family: inherit; font-size: 0.85rem;"></textarea>
+                                <button onclick="saveSysConfig('SHREW_CUSTOM_INSTRUCTIONS', 'sys-instructions')" style="align-self: flex-end; padding: 0.5rem 1rem; background: black; color: white; border: none; cursor: pointer; margin-top: 5px;">Save Instructions</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="vault-list-system"></div>
                 </div>
             </div>
         </div>
@@ -206,8 +368,33 @@
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
         const sessionList = document.getElementById('session-list');
-        const vaultList = document.getElementById('vault-list');
         const skillsList = document.getElementById('skills-list');
+
+        // Modal Logic
+        let modalResolve = null;
+        const modalOverlay = document.getElementById('modal-overlay');
+        const modalTitle = document.getElementById('modal-title');
+        const modalText = document.getElementById('modal-text');
+        const modalCancel = document.getElementById('modal-cancel');
+        const modalConfirm = document.getElementById('modal-confirm');
+
+        function confirmAction(title, text) {
+            modalTitle.textContent = title;
+            modalText.textContent = text;
+            modalOverlay.classList.add('active');
+            return new Promise((resolve) => {
+                modalResolve = resolve;
+            });
+        }
+
+        modalCancel.onclick = () => {
+            closeModal();
+            if (modalResolve) modalResolve(false);
+        };
+        modalConfirm.onclick = () => {
+            closeModal();
+            if (modalResolve) modalResolve(true);
+        };
 
         document.querySelectorAll('.nav-item').forEach(item => {
             if (item.id === 'new-chat-btn') return;
@@ -223,30 +410,63 @@
             });
         });
 
+        // Sub-tabs logic
+        document.querySelectorAll('.sub-tab').forEach(item => {
+            item.addEventListener('click', () => {
+                const parent = item.parentElement;
+                parent.querySelectorAll('.sub-tab').forEach(el => el.classList.remove('active'));
+                item.classList.add('active');
+                
+                const container = parent.parentElement;
+                container.querySelectorAll('.sub-tab-content').forEach(el => el.classList.remove('active'));
+                document.getElementById(item.dataset.subtab).classList.add('active');
+            });
+        });
+
         // Sessions logic
         async function loadSessions() {
             const res = await fetch('/sessions');
-            const sessions = await res.json();
+            let sessions = await res.json();
             sessionList.innerHTML = '';
+            if (!sessions) sessions = [];
             sessions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).forEach(s => {
                 const div = document.createElement('div');
                 div.className = 'session-item';
-                div.style = 'padding: 4px; cursor: pointer; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
-                div.textContent = s.id;
-                div.onclick = () => loadSession(s.id);
+                div.innerHTML = `
+                    <span class="session-id" style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${s.id}</span>
+                    <button class="delete-session-btn" data-id="${s.id}">&times;</button>
+                `;
+                div.querySelector('.session-id').onclick = () => loadSession(s.id);
+                div.querySelector('.delete-session-btn').onclick = (e) => {
+                    e.stopPropagation();
+                    deleteSession(s.id);
+                };
                 sessionList.appendChild(div);
             });
         }
 
+        async function deleteSession(id) {
+            const ok = await confirmAction('Delete Session', `Are you sure you want to delete session ${id}?`);
+            if (!ok) return;
+            await fetch(`/session?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+            loadSessions();
+            chatContainer.innerHTML = '';
+        }
+
         async function loadSession(id) {
-            const res = await fetch(`/session?id=${id}`);
+            const res = await fetch(`/session?id=${encodeURIComponent(id)}`);
             const sess = await res.json();
             chatContainer.innerHTML = '';
-            sess.messages.forEach(m => {
-                if (m.content.startsWith('Context: ')) return;
-                appendMessage(m.role, m.content);
-            });
+            if (sess.messages) {
+                sess.messages.forEach(m => {
+                    if (m.content.startsWith('Context: ')) return;
+                    appendMessage(m.role, m.content);
+                });
+            }
             chatContainer.scrollTop = chatContainer.scrollHeight;
+            document.querySelectorAll('.session-item').forEach(el => {
+                el.classList.toggle('active', el.querySelector('.session-id').textContent === id);
+            });
         }
 
         document.getElementById('new-chat-btn').onclick = async () => {
@@ -259,46 +479,181 @@
         async function loadVault() {
             const res = await fetch('/vault');
             const secrets = await res.json();
-            vaultList.innerHTML = '<table style="width: 100%; text-align: left; border-collapse: collapse;">' +
-                '<tr style="border-bottom: 1px solid var(--border);"><th style="padding: 10px;">Key</th><th style="padding: 10px;">Value</th><th style="padding: 10px;">Action</th></tr>' +
-                Object.entries(secrets).map(([k, v]) => `
-                    <tr style="border-bottom: 1px solid var(--border);">
-                        <td style="padding: 10px;">${k}</td>
-                        <td style="padding: 10px;">••••••••</td>
-                        <td style="padding: 10px;"><button onclick="deleteSecret('${k}')" style="color: red; background: none; border: none; cursor: pointer;">Delete</button></td>
-                    </tr>
-                `).join('') + '</table>';
+            
+            const configKeys = ['SHREW_API_KEY', 'SHREW_API_URL', 'SHREW_MODEL'];
+            const sysList = document.getElementById('vault-list-system');
+            const genList = document.getElementById('vault-list-general');
+
+            const renderTable = (entries) => {
+                if (entries.length === 0) return '<p style="font-size: 0.8rem; color: #999;">No entries found.</p>';
+                return '<table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 0.85rem;">' +
+                    '<tr style="border-bottom: 1px solid var(--border);"><th style="padding: 10px;">Key</th><th style="padding: 10px;">Value</th><th style="padding: 10px;">Action</th></tr>' +
+                    entries.map(([k, v]) => `
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 10px;">${k}</td>
+                            <td style="padding: 10px;">••••••••</td>
+                            <td style="padding: 10px;"><button class="delete-vault-btn" data-key="${k}" style="color: red; background: none; border: none; cursor: pointer;">Delete</button></td>
+                        </tr>
+                    `).join('') + '</table>';
+            };
+
+            const allEntries = Object.entries(secrets);
+            const sysEntries = allEntries.filter(([k]) => configKeys.includes(k));
+            const genEntries = allEntries.filter(([k]) => !configKeys.includes(k));
+
+            sysList.innerHTML = renderTable(sysEntries);
+            genList.innerHTML = renderTable(genEntries);
+
+            // Update inputs with current values for system config
+            sysEntries.forEach(([k, v]) => {
+                if (k === 'SHREW_API_KEY') document.getElementById('sys-api-key').value = v;
+                if (k === 'SHREW_API_URL') document.getElementById('sys-api-url').value = v;
+                if (k === 'SHREW_MODEL') document.getElementById('sys-model').value = v;
+                if (k === 'SHREW_CUSTOM_INSTRUCTIONS') document.getElementById('sys-instructions').value = v;
+            });
+
+            document.querySelectorAll('.delete-vault-btn').forEach(btn => {
+                btn.onclick = () => deleteSecret(btn.getAttribute('data-key'));
+            });
         }
 
-        async function deleteSecret(key) {
-            await fetch(`/vault?key=${key}`, { method: 'DELETE' });
+        async function saveSysConfig(key, inputId) {
+            const value = document.getElementById(inputId).value;
+            await fetch('/vault', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key, value })
+            });
             loadVault();
         }
 
-        document.getElementById('add-vault-btn').onclick = async () => {
-            const key = document.getElementById('vault-key').value;
-            const value = document.getElementById('vault-val').value;
+        async function deleteSecret(key) {
+            const ok = await confirmAction('Delete Secret', `Are you sure you want to delete ${key}?`);
+            if (!ok) return;
+            await fetch(`/vault?key=${encodeURIComponent(key)}`, { method: 'DELETE' });
+            loadVault();
+        }
+
+        document.getElementById('add-vault-btn-gen').onclick = async () => {
+            const key = document.getElementById('vault-key-gen').value;
+            const value = document.getElementById('vault-val-gen').value;
             if (!key || !value) return;
             await fetch('/vault', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ key, value })
             });
-            document.getElementById('vault-key').value = '';
-            document.getElementById('vault-val').value = '';
+            document.getElementById('vault-key-gen').value = '';
+            document.getElementById('vault-val-gen').value = '';
             loadVault();
         };
 
         // Skills logic
         async function loadSkills() {
             const res = await fetch('/skills');
-            const skills = await res.json();
+            let skills = await res.json();
+            if (!skills) skills = [];
             skillsList.innerHTML = skills.map(s => `
                 <div style="padding: 1rem; border: 1px solid var(--border); border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
-                    <strong>${s}</strong>
-                    <span style="font-size: 0.8rem; color: green;">Active</span>
+                    <div style="flex: 1;">
+                        <strong>${s}</strong>
+                        <span style="font-size: 0.7rem; color: green; margin-left: 10px; padding: 2px 6px; background: #e6f7e6; border-radius: 10px;">Active</span>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="view-skill-btn" data-name="${s}" style="padding: 4px 10px; font-size: 0.8rem; background: #f0f0f0; border: 1px solid #ddd; cursor: pointer; border-radius: 4px;">View</button>
+                        <button class="delete-skill-btn" data-name="${s}" style="padding: 4px 10px; font-size: 0.8rem; background: #fff; color: #ff4444; border: 1px solid #ff4444; cursor: pointer; border-radius: 4px;">Delete</button>
+                    </div>
                 </div>
             `).join('') || '<p>No skills learned yet.</p>';
+
+            document.querySelectorAll('.view-skill-btn').forEach(btn => {
+                btn.onclick = () => viewSkill(btn.getAttribute('data-name'));
+            });
+            document.querySelectorAll('.delete-skill-btn').forEach(btn => {
+                btn.onclick = () => deleteSkill(btn.getAttribute('data-name'));
+            });
+        }
+
+        async function viewSkill(name) {
+            const res = await fetch(`/skills?name=${encodeURIComponent(name)}`);
+            const docs = await res.text();
+            
+            showLargeModal(`Skill: ${name}`, '', `
+                <textarea id="skill-docs-edit">${docs}</textarea>
+            `, async () => {
+                const newDocs = document.getElementById('skill-docs-edit').value;
+                await fetch('/skills', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, docs: newDocs })
+                });
+                loadSkills();
+            });
+        }
+
+        async function deleteSkill(name) {
+            const ok = await confirmAction('Delete Skill', `Are you sure you want to delete the skill "${name}"?`);
+            if (!ok) return;
+            await fetch(`/skills?name=${encodeURIComponent(name)}`, { method: 'DELETE' });
+            loadSkills();
+        }
+
+        document.getElementById('new-skill-btn').onclick = () => {
+            showLargeModal('Create New Skill', 'Define a new skill by providing a name and documentation.', `
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.5rem;">Skill Name</label>
+                    <input type="text" id="new-skill-name" placeholder="e.g. StripeAPI" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border);">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.5rem;">Documentation / Instructions</label>
+                    <textarea id="new-skill-docs" placeholder="Enter API endpoints, usage details, etc."></textarea>
+                </div>
+            `, async () => {
+                const name = document.getElementById('new-skill-name').value;
+                const docs = document.getElementById('new-skill-docs').value;
+                if (!name || !docs) return;
+                await fetch('/skills', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, docs })
+                });
+                loadSkills();
+            });
+        };
+
+        function showLargeModal(title, text, bodyHtml, onSave) {
+            const modalDialog = document.getElementById('modal-dialog');
+            const modalBody = document.getElementById('modal-body');
+            const modalSave = document.getElementById('modal-save');
+            const modalConfirm = document.getElementById('modal-confirm');
+            
+            modalTitle.textContent = title;
+            modalText.textContent = text;
+            modalBody.innerHTML = bodyHtml;
+            modalBody.style.display = 'block';
+            modalDialog.classList.add('large');
+            modalSave.style.display = 'block';
+            modalConfirm.style.display = 'none';
+            
+            modalOverlay.classList.add('active');
+            
+            modalSave.onclick = async () => {
+                if (onSave) await onSave();
+                closeModal();
+            };
+        }
+
+        function closeModal() {
+            const modalDialog = document.getElementById('modal-dialog');
+            const modalBody = document.getElementById('modal-body');
+            const modalSave = document.getElementById('modal-save');
+            const modalConfirm = document.getElementById('modal-confirm');
+            
+            modalOverlay.classList.remove('active');
+            modalBody.style.display = 'none';
+            modalDialog.classList.remove('large');
+            modalSave.style.display = 'none';
+            modalConfirm.style.display = 'block';
         }
 
         loadSessions();
@@ -402,7 +757,7 @@
             div.className = type === 'executing' ? 'action-block' : (type === 'file_op' ? 'file-block' : 'output-block');
             
             if (type === 'file_op') {
-                div.innerHTML = `<span>&#128196;</span> ${content}`;
+                div.innerHTML = `<span>&#128196;</span> <div>${content}</div>`;
             } else {
                 div.textContent = type === 'executing' ? '> ' + content : content;
             }

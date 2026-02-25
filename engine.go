@@ -28,6 +28,7 @@ type Event struct {
 
 type Engine struct {
 	Config      Config
+	BaseSystem  string
 	System      string
 	History     []Message
 	SessionID   string
@@ -36,14 +37,22 @@ type Engine struct {
 	mu          sync.Mutex
 }
 
-func NewEngine(cfg Config, system string, sessionID string, history []Message, db *DB) *Engine {
-	return &Engine{
-		Config:    cfg,
-		System:    system,
-		History:   history,
-		SessionID: sessionID,
-		DB:        db,
+func NewEngine(cfg Config, baseSystem string, sessionID string, history []Message, db *DB) *Engine {
+	e := &Engine{
+		Config:     cfg,
+		BaseSystem: baseSystem,
+		SessionID:  sessionID,
+		DB:         db,
+		History:    history,
 	}
+	e.RefreshSystemPrompt()
+	return e
+}
+
+func (e *Engine) RefreshSystemPrompt() {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.System = e.BaseSystem + "\n\n" + e.Config.CustomInstructions + "\n\n" + loadSkills(e.DB)
 }
 
 func (e *Engine) Subscribe() chan Event {
@@ -52,6 +61,22 @@ func (e *Engine) Subscribe() chan Event {
 	ch := make(chan Event, 10)
 	e.Subscribers = append(e.Subscribers, ch)
 	return ch
+}
+
+func (e *Engine) UpdateConfig(key, value string) {
+	e.mu.Lock()
+	switch key {
+	case "SHREW_API_KEY":
+		e.Config.APIKey = value
+	case "SHREW_API_URL":
+		e.Config.APIURL = value
+	case "SHREW_MODEL":
+		e.Config.Model = value
+	case "SHREW_CUSTOM_INSTRUCTIONS":
+		e.Config.CustomInstructions = value
+	}
+	e.mu.Unlock()
+	e.RefreshSystemPrompt()
 }
 
 func (e *Engine) broadcast(event Event) {
@@ -101,8 +126,18 @@ func (e *Engine) handleTags(content string) bool {
 	runRe := regexp.MustCompile(`(?s)<run>(.*?)</run>`)
 	if match := runRe.FindStringSubmatch(content); len(match) >= 2 {
 		cmdStr := strings.TrimSpace(match[1])
+		
+		// Broadcast the command WITH placeholders to keep secrets hidden from user/logs
 		e.broadcast(Event{Type: EventExecuting, Content: cmdStr})
-		output, _ := executeCommand(cmdStr)
+
+		// Resolve placeholders for actual execution
+		resolvedCmd, err := e.resolveVaultPlaceholders(cmdStr)
+		if err != nil {
+			e.addOutput(err.Error(), "Secret resolution failed.")
+			return true
+		}
+
+		output, _ := executeCommand(resolvedCmd)
 		e.addOutput(fmt.Sprintf("<output>\n%s\n</output>", output), output)
 		return true
 	}
@@ -149,12 +184,29 @@ func (e *Engine) handleTags(content string) bool {
 		return true
 	}
 
+	// 4.2 Check for <vault_list>
+	vaultListRe := regexp.MustCompile(`<vault_list\s*/>`)
+	if vaultListRe.MatchString(content) {
+		secrets, err := e.DB.ListSecrets()
+		var keys []string
+		for k := range secrets {
+			keys = append(keys, k)
+		}
+		output := "Available vault keys: " + strings.Join(keys, ", ")
+		if err != nil || len(keys) == 0 {
+			output = "No keys found in vault."
+		}
+		e.addOutput(fmt.Sprintf("<vault_keys>\n%s\n</vault_keys>", output), "Listed vault keys")
+		return true
+	}
+
 	// 5. Check for <save_skill>
 	skillSaveRe := regexp.MustCompile(`(?s)<save_skill\s+name="(.*?)">(.*?)</save_skill>`)
 	if match := skillSaveRe.FindStringSubmatch(content); len(match) >= 3 {
 		name := match[1]
 		docs := match[2]
 		e.DB.SaveSkill(name, docs)
+		e.RefreshSystemPrompt()
 		e.addOutput(fmt.Sprintf("Skill '%s' saved successfully.", name), "Learned new skill: "+name)
 		return true
 	}
@@ -173,6 +225,25 @@ func (e *Engine) handleTags(content string) bool {
 	}
 
 	return false
+}
+
+func (e *Engine) resolveVaultPlaceholders(cmdStr string) (string, error) {
+	resolvedCmd := cmdStr
+	vaultPlaceholderRe := regexp.MustCompile(`\[\[vault:(.*?)\]\]`)
+	placeholders := vaultPlaceholderRe.FindAllStringSubmatch(cmdStr, -1)
+
+	for _, ph := range placeholders {
+		if len(ph) < 2 {
+			continue
+		}
+		key := ph[1]
+		val, err := e.DB.GetSecret(key)
+		if err != nil {
+			return "", fmt.Errorf("error: secret '%s' not found in vault", key)
+		}
+		resolvedCmd = strings.ReplaceAll(resolvedCmd, ph[0], val)
+	}
+	return resolvedCmd, nil
 }
 
 func (e *Engine) addOutput(fullMsg string, display string) {

@@ -6,13 +6,10 @@ type Message struct {
 }
 
 type Config struct {
-	GeminiKey string
-	OpenAIKey string
-	OllamaURL string
-	Model     string
-	Provider  string
-	APIURL    string
-	CustomCmd string
+	APIKey             string
+	APIURL             string
+	Model              string
+	CustomInstructions string
 }
 
 type GeminiRequest struct {

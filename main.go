@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -17,8 +16,14 @@ To reason, use <think>...</think> tags.
 Use standard CLI tools.
 
 VAULT:
-You can retrieve secrets (bearer tokens, API keys) from the local vault using <vault_get key="NAME"/>.
-The system will provide the secret value in a <vault_output> tag.
+To use secrets (bearer tokens, API keys) in shell commands without seeing them, use the placeholder [[vault:NAME]] inside <run> tags.
+Example: <run>curl -H "Authorization: Bearer [[vault:OPENAI_API_KEY]]" ...</run>
+The system will automatically inject the secret before execution.
+To store a secret: <vault_set key="NAME" value="SECRET_VALUE"/>.
+To see which keys are available in the vault without seeing their values: <vault_list/>.
+If you need a secret but don't know the key name, use <vault_list/> first to help the user.
+Do not use <vault_get> if you only need the secret for a command.
+If you need to see a secret for other reasons, use <vault_get key="NAME"/>.
 
 SKILLS:
 If you need documentation for an API, first check if you have it using <get_skill name="service_name"/>.
@@ -56,30 +61,23 @@ func main() {
 	// but for a CLI tool this is often acceptable until shutdown.
 
 	cfg := Config{
-		GeminiKey: os.Getenv("GEMINI_API_KEY"),
-		OpenAIKey: os.Getenv("OPENAI_API_KEY"),
-		OllamaURL: os.Getenv("OLLAMA_URL"),
-		APIURL:    os.Getenv("SHREW_API_URL"),
-		CustomCmd: os.Getenv("SHREW_COMMAND"),
+		APIKey:             os.Getenv("SHREW_API_KEY"),
+		APIURL:             os.Getenv("SHREW_API_URL"),
+		Model:              os.Getenv("SHREW_MODEL"),
+		CustomInstructions: os.Getenv("SHREW_CUSTOM_INSTRUCTIONS"),
 	}
 
-	modelEnv := os.Getenv("SHREW_MODEL")
-	if modelEnv == "" {
-		modelEnv = "ollama/qwen2.5-coder:7b"
+	if cfg.Model == "" {
+		cfg.Model = "gpt-4o"
 	}
-
-	parts := strings.SplitN(modelEnv, "/", 2)
-	if len(parts) != 2 {
-		fmt.Println("Invalid SHREW_MODEL. Expected 'provider/model'")
-		os.Exit(1)
+	if cfg.APIURL == "" {
+		cfg.APIURL = "https://api.openai.com/v1/chat/completions"
 	}
-	cfg.Provider = parts[0]
-	cfg.Model = parts[1]
 
 	sessionID := time.Now().Format("2006-01-02-15-04-05")
 	history := []Message{{Role: "user", Content: "Context: " + gatherContext()}}
 	
-	engine := NewEngine(cfg, baseSystemPrompt+loadSkills(db), sessionID, history, db)
+	engine := NewEngine(cfg, baseSystemPrompt, sessionID, history, db)
 	server := NewServer(engine)
 
 	// Start Server

@@ -72,6 +72,13 @@ func (db *DB) GetSession(id string) (Session, error) {
 	return s, err
 }
 
+func (db *DB) DeleteSession(id string) error {
+	return db.conn.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketSessions)
+		return b.Delete([]byte(id))
+	})
+}
+
 func (db *DB) ListSessions() ([]Session, error) {
 	var sessions []Session
 	err := db.conn.View(func(tx *bbolt.Tx) error {
@@ -161,4 +168,11 @@ func (db *DB) ListSkills() ([]string, error) {
 		})
 	})
 	return skills, err
+}
+
+func (db *DB) DeleteSkill(name string) error {
+	return db.conn.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketSkills)
+		return b.Delete([]byte(name))
+	})
 }

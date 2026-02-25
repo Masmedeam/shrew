@@ -31,6 +31,40 @@ func loadEnv() {
 	}
 }
 
+func saveEnv(key, value string) error {
+	f, err := os.OpenFile(".env", os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	var lines []string
+	scanner := bufio.NewScanner(f)
+	found := false
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, key+"=") {
+			lines = append(lines, fmt.Sprintf("%s=%s", key, value))
+			found = true
+		} else {
+			lines = append(lines, line)
+		}
+	}
+
+	if !found {
+		lines = append(lines, fmt.Sprintf("%s=%s", key, value))
+	}
+
+	// Truncate and write back
+	f.Seek(0, 0)
+	f.Truncate(0)
+	writer := bufio.NewWriter(f)
+	for _, line := range lines {
+		fmt.Fprintln(writer, line)
+	}
+	return writer.Flush()
+}
+
 func loadSkills(db *DB) string {
 	var skills strings.Builder
 	// Load from files
